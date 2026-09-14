@@ -438,6 +438,8 @@ function extractJson(text) {
   return JSON.parse(cleaned.slice(start, end + 1));
 }
 
+const WORKER_URL = 'https://long-shape-f8ed.takeshi610414m0207.workers.dev/';
+
 async function summarize() {
   const text = rawInput.value.trim();
   if (!text) { setStatus('メモを入力してください。', true); return; }
@@ -453,18 +455,14 @@ async function summarize() {
 ${text}`;
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const response = await fetch(WORKER_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 1000,
-        messages: [{ role: "user", content: prompt }]
-      })
+      body: JSON.stringify({ prompt })
     });
     const data = await response.json();
-    const textBlock = (data.content || []).map(b => b.text || '').join('\n');
-    const parsed = extractJson(textBlock);
+    if (data.error) throw new Error(data.error);
+    const parsed = extractJson(data.text || '');
 
     draftCustomer.value = parsed.customerName || '不明';
     draftDate.value = parsed.date || todayStr();
